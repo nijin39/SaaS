@@ -47,7 +47,7 @@ export class UserManagementStack extends cdk.Stack {
     // Define IAM policy for creating Cognito User Pool
     const cognitoUserPoolPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: ["cognito-idp:CreateUserPool"],
+      actions: ["cognito-idp:CreateUserPool", "cognito-idp:AdminCreateUser"],
       resources: ["*"], // Specify the resource ARN for a specific User Pool if needed
     });
 

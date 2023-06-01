@@ -21,13 +21,17 @@ export const handler: Handler = async (event, context) => {
         TableName: process.env.TABLE_NAME!,
         KeyConditionExpression: "tenantId = :tenantId",
         ExpressionAttributeValues: {
-          ":tenantId": tenantId,
+          ":tenantId": "meta#" + tenantId,
         },
       };
 
       try {
         const result = await dynamoDB.query(params).promise();
         if (result.Items && result.Items.length > 0) {
+          console.log("Query :", JSON.stringify(result));
+          console.log("User Pool ID:", result.Items[0].userId);
+          await addUserToUserPool(userId, tenantId, result.Items[0].userId);
+
           return result.Items;
         } else {
           const createdUserPoolId = await createUserPool(tenantId, tier);
@@ -37,7 +41,13 @@ export const handler: Handler = async (event, context) => {
             userPoolId: createdUserPoolId,
           });
 
-          addUserToUserPool(userId, tenantId, createdUserPoolId!);
+          await putDataToDynamoDB({
+            ...event,
+            tenantId: "meta#" + tenantId,
+            userId: createdUserPoolId,
+          });
+
+          await addUserToUserPool(userId, tenantId, createdUserPoolId!);
           return [];
         }
       } catch (error) {
@@ -87,6 +97,8 @@ async function addUserToFreeTierUserPool(userId: any, tenantId: any) {
   const createUserResponse = await cognitoIdentityServiceProvider
     .adminCreateUser(createUserParams)
     .promise();
+
+  console.log(createUserResponse);
 }
 
 async function addUserToUserPool(
@@ -121,6 +133,8 @@ async function addUserToUserPool(
   const createUserResponse = await cognitoIdentityServiceProvider
     .adminCreateUser(createUserParams)
     .promise();
+
+  console.log("LOG :", createUserResponse);
 }
 
 async function putDataToDynamoDB(item: any) {
